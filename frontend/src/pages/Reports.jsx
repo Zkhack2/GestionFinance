@@ -1,6 +1,10 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { PieChart, Pie, Cell, Tooltip, ResponsiveContainer, BarChart, Bar, XAxis, YAxis, CartesianGrid, Legend } from 'recharts';
+import { 
+    PieChart, Pie, Cell, Tooltip, ResponsiveContainer, 
+    BarChart, Bar, XAxis, YAxis, CartesianGrid, Legend,
+    LineChart, Line
+} from 'recharts';
 import api from '../api/axios';
 import './Reports.css';
 
@@ -13,18 +17,22 @@ const Reports = () => {
     const [loading, setLoading] = useState(true);
     const navigate = useNavigate();
 
+    // useEffect s'exécute au montage du composant
     useEffect(() => {
         const fetchAllData = async () => {
             try {
+                // On récupère TOUTES les données en parallèle (plus rapide)
                 const [resTrans, resDettes, resFactures] = await Promise.all([
                     api.get('transactions/'),
                     api.get('dettes/'),
                     api.get('factures/')
                 ]);
+                // On met à jour nos états locaux
                 setTransactions(resTrans.data);
                 setDettes(resDettes.data);
                 setFactures(resFactures.data);
             } catch (err) {
+                // Si erreur 401 (token expiré), redirection vers login
                 if (err.response && err.response.status === 401) {
                     navigate('/login');
                 }
@@ -38,6 +46,26 @@ const Reports = () => {
     const handleLogout = () => {
         localStorage.removeItem('access_token');
         navigate('/login');
+    };
+
+    // Fonction pour télécharger l'export CSV
+    const handleExportCSV = async () => {
+        try {
+            // On demande le fichier au backend (responseType blob pour un fichier binaire)
+            const response = await api.get('export-csv/', { responseType: 'blob' });
+            
+            // Création d'un lien temporaire pour le téléchargement
+            const url = window.URL.createObjectURL(new Blob([response.data]));
+            const link = document.createElement('a');
+            link.href = url;
+            link.setAttribute('download', 'transactions.csv');
+            document.body.appendChild(link);
+            link.click();
+            link.remove();
+        } catch (err) {
+            console.error("Erreur d'export :", err);
+            alert("Impossible de générer l'export CSV.");
+        }
     };
 
     // Calculate chart data
@@ -69,28 +97,44 @@ const Reports = () => {
         montant: groupedExpenses[key]
     })).sort((a,b) => b.montant - a.montant).slice(0, 5); // top 5 expenses
 
-    // Compute Alerts (Overdue and Upcoming within 7 days)
+    // --- LOGIQUE DU GRAPHIQUE LINÉAIRE (Évolution du solde) ---
+    const sortedTransactions = [...transactions].sort((a, b) => new Date(a.date_creation) - new Date(b.date_creation));
+    let runningBalance = 0;
+    const lineData = sortedTransactions.map(t => {
+        const amt = parseFloat(t.montant);
+        runningBalance += (t.type_transaction === 'REVENU' ? amt : -amt);
+        return {
+            date: new Date(t.date_creation).toLocaleDateString('fr-FR', { day: 'numeric', month: 'short' }),
+            solde: runningBalance
+        };
+    }).slice(-10); // On garde les 10 derniers points pour la clarté
+
+    // --- LOGIQUE DES ALERTES ---
+    // Cette fonction calcule les factures/dettes en retard ou proches du terme
     const computeAlerts = () => {
         const alertsList = [];
         const today = new Date();
         today.setHours(0,0,0,0);
         
+        // On définit une période de 7 jours pour les alertes "à venir"
         const inSevenDays = new Date(today);
         inSevenDays.setDate(today.getDate() + 7);
 
-        // Check Factures
+        // Analyse des factures
         factures.forEach(f => {
             if (!f.est_payee && f.date_echeance) {
                 const echeance = new Date(f.date_echeance);
                 if (echeance < today) {
+                    // ALERTE ROUGE : déjà en retard
                     alertsList.push({ id: `f-${f.id}`, type: 'danger', title: 'Facture en retard', desc: `${f.titre} - ${f.montant}€`, date: f.date_echeance, link: '/dettes-factures' });
                 } else if (echeance <= inSevenDays) {
+                    // ALERTE ORANGE : arrive bientôt
                     alertsList.push({ id: `f-${f.id}`, type: 'warning', title: 'Facture à venir', desc: `${f.titre} - ${f.montant}€`, date: f.date_echeance, link: '/dettes-factures' });
                 }
             }
         });
 
-        // Check Dettes
+        // Analyse des dettes (même logique)
         dettes.forEach(d => {
             if (!d.est_rembourse && d.date_echeance) {
                 const echeance = new Date(d.date_echeance);
@@ -102,7 +146,7 @@ const Reports = () => {
             }
         });
 
-        // Sort by date closest to today (overdue first)
+        // On trie les alertes : les plus anciennes (retards) en premier
         return alertsList.sort((a, b) => new Date(a.date) - new Date(b.date));
     };
 
@@ -133,8 +177,13 @@ const Reports = () => {
 
             <main className="dashboard-content page-container">
                 <header className="dashboard-header animate-fade-in-up">
-                    <h1 className="title">Analyses et Statistiques</h1>
-                    <p className="subtitle">Visualisez la répartition de votre budget</p>
+                    <div>
+                        <h1 className="title">Analyses et Statistiques</h1>
+                        <p className="subtitle">Visualisez la répartition de votre budget</p>
+                    </div>
+                    <button className="btn btn-secondary" onClick={handleExportCSV}>
+                        📥 Exporter CSV
+                    </button>
                 </header>
 
                 <div className="charts-grid">
@@ -174,6 +223,29 @@ const Reports = () => {
                                     <Tooltip cursor={{fill: 'rgba(255,255,255,0.05)'}} formatter={(value) => `${value.toFixed(2)} €`} />
                                     <Bar dataKey="montant" fill="var(--primary)" radius={[4, 4, 0, 0]} />
                                 </BarChart>
+                            </ResponsiveContainer>
+                        </div>
+                    </div>
+
+                    <div className="glass-panel chart-card full-width animate-scale-in delay-250">
+                        <h3>Évolution du Solde</h3>
+                        <div className="chart-wrapper">
+                            <ResponsiveContainer width="100%" height={300}>
+                                <LineChart data={lineData}>
+                                    <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.1)" />
+                                    <XAxis dataKey="date" stroke="#94A3B8" />
+                                    <YAxis stroke="#94A3B8" />
+                                    <Tooltip formatter={(value) => `${value.toFixed(2)} €`} />
+                                    <Legend />
+                                    <Line 
+                                        type="monotone" 
+                                        dataKey="solde" 
+                                        stroke="var(--secondary)" 
+                                        strokeWidth={3} 
+                                        dot={{ fill: 'var(--secondary)', r: 4 }}
+                                        activeDot={{ r: 6 }} 
+                                    />
+                                </LineChart>
                             </ResponsiveContainer>
                         </div>
                     </div>

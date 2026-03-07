@@ -4,39 +4,52 @@ import api from '../api/axios';
 import './Dashboard.css';
 
 const Dashboard = () => {
+    // État pour stocker la liste des transactions récupérées
     const [transactions, setTransactions] = useState([]);
+    const [budget, setBudget] = useState(null); // Budget pour le mois en cours
     const [loading, setLoading] = useState(true);
     const navigate = useNavigate();
 
+    // useEffect : s'exécute quand le composant est affiché (monté)
     useEffect(() => {
         const fetchDashboardData = async () => {
             try {
-                // Fetch transactions
-                const res = await api.get('transactions/');
-                setTransactions(res.data);
+                // APPEL API : on demande les transactions au backend
+                const transRes = await api.get('transactions/');
+                setTransactions(transRes.data);
+
+                // Récupération du budget du mois en cours
+                const now = new Date();
+                const budgetRes = await api.get('budgets/');
+                const currentBudget = budgetRes.data.find(b => 
+                    b.mois === (now.getMonth() + 1) && b.annee === now.getFullYear()
+                );
+                setBudget(currentBudget);
             } catch (err) {
                 console.error("Erreur de récupération :", err);
-                // Si non autorisé (token expiré ou absent), on redirige vers le login
                 if (err.response && err.response.status === 401) {
                     localStorage.removeItem('access_token');
                     localStorage.removeItem('refresh_token');
-                    navigate('/login');
+                    navigate('/login'); // On renvoie l'utilisateur à la page de connexion
                 }
             } finally {
-                setLoading(false);
+                setLoading(false); // On arrête l'affichage du chargement
             }
         };
 
         fetchDashboardData();
     }, [navigate]);
 
+    // Fonction pour se déconnecter
     const handleLogout = () => {
         localStorage.removeItem('access_token');
         localStorage.removeItem('refresh_token');
         navigate('/login');
     };
 
-    // Calculs rapides
+    // --- CALCULS DES STATISTIQUES ---
+    // filter() : on ne garde que les transactions d'un certain type
+    // reduce() : on additionne tous les montants
     const totalRevenus = transactions
         .filter(t => t.type_transaction === 'REVENU')
         .reduce((sum, current) => sum + parseFloat(current.montant), 0);
@@ -46,6 +59,10 @@ const Dashboard = () => {
         .reduce((sum, current) => sum + parseFloat(current.montant), 0);
         
     const soldeActuel = totalRevenus - totalDepenses;
+
+    // Calcul du pourcentage du budget consommé
+    const budgetMontant = budget ? parseFloat(budget.montant) : 0;
+    const pourcentageBudget = budgetMontant > 0 ? (totalDepenses / budgetMontant) * 100 : 0;
 
     if (loading) return <div className="page-container"><p>Chargement du tableau de bord...</p></div>;
 
@@ -92,6 +109,29 @@ const Dashboard = () => {
                         <p className="stat-value negative">-{totalDepenses.toFixed(2)} €</p>
                     </div>
                 </div>
+
+                {/* --- SECTION BUDGET --- */}
+                {budget && (
+                    <div className="budget-section glass-panel animate-fade-in-up delay-350">
+                        <div className="budget-header">
+                            <h2>Suivi du Budget ({new Date().toLocaleString('fr-FR', { month: 'long' })})</h2>
+                            <span className="budget-ratio">
+                                {totalDepenses.toFixed(2)}€ / {budgetMontant.toFixed(2)}€
+                            </span>
+                        </div>
+                        <div className="progress-container">
+                            <div 
+                                className={`progress-bar ${pourcentageBudget > 100 ? 'danger' : pourcentageBudget > 80 ? 'warning' : ''}`}
+                                style={{ width: `${Math.min(pourcentageBudget, 100)}%` }}
+                            ></div>
+                        </div>
+                        <p className="budget-status">
+                            {pourcentageBudget > 100 
+                                ? `Dépassement de ${(totalDepenses - budgetMontant).toFixed(2)}€ !` 
+                                : `Il vous reste ${(budgetMontant - totalDepenses).toFixed(2)}€.`}
+                        </p>
+                    </div>
+                )}
 
                 <div className="recent-transactions glass-panel animate-fade-in-up delay-400">
                     <div className="section-header">

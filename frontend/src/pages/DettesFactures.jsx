@@ -8,21 +8,23 @@ const DettesFactures = () => {
     const [factures, setFactures] = useState([]);
     const [loading, setLoading] = useState(true);
     
-    // Form state for Dettes
+    // Formulaires pour ajouter des dettes ou factures
     const [showDetteForm, setShowDetteForm] = useState(false);
     const [detteData, setDetteData] = useState({
         creancier_ou_debiteur: '',
         montant: '',
         description: '',
-        date_emprunt: new Date().toISOString().split('T')[0],
+        date_emprunt: new Date().toISOString().split('T')[0], // Date du jour par défaut
         date_echeance: '',
         est_rembourse: false
     });
 
     const navigate = useNavigate();
 
+    // Récupération globale des données
     const fetchData = async () => {
         try {
+            // Promise.all permet de lancer les deux requêtes en même temps
             const [resDettes, resFactures] = await Promise.all([
                 api.get('dettes/'),
                 api.get('factures/')

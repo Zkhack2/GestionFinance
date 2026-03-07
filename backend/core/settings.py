@@ -25,7 +25,7 @@ SECRET_KEY = 'django-insecure-r6eq!0vkn&g-z&sm*ug!itptr#q#@1rv-l)+_3#a7drxmx5u#f
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True
 
-ALLOWED_HOSTS = []
+ALLOWED_HOSTS = ['*']
 
 
 # Application definition
@@ -122,6 +122,7 @@ STATIC_URL = 'static/'
 
 # Base URL to use when referring to static files located in STATIC_ROOT.
 # Base URL to use when referring to static files located in STATIC_ROOT.
+CORS_ALLOW_ALL_ORIGINS = True # Temporaire pour débugger
 CORS_ALLOWED_ORIGINS = [
     "http://localhost:5173",
     "http://127.0.0.1:5173",

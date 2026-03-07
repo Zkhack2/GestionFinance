@@ -4,49 +4,60 @@ import api from '../api/axios';
 import './Login.css';
 
 const Login = () => {
-    const [isLogin, setIsLogin] = useState(true);
-    const [formData, setFormData] = useState({ username: '', password: '', email: '' });
-    const [error, setError] = useState('');
-    const [loading, setLoading] = useState(false);
+    // États (States) : permettent de stocker des données qui peuvent changer
+    const [isLogin, setIsLogin] = useState(true); // Est-on en mode Connexion ou Inscription ?
+    const [formData, setFormData] = useState({ username: '', password: '', email: '' }); // Données du formulaire
+    const [error, setError] = useState(''); // Message d'erreur
+    const [loading, setLoading] = useState(false); // État de chargement (attente serveur)
     const navigate = useNavigate();
 
+    // Met à jour l'état quand l'utilisateur tape dans un champ
     const handleChange = (e) => {
         setFormData({ ...formData, [e.target.name]: e.target.value });
     };
 
+    // Fonction exécutée quand on valide le formulaire
     const handleSubmit = async (e) => {
-        e.preventDefault();
+        e.preventDefault(); // Empêche le rechargement de la page
         setError('');
         setLoading(true);
 
         try {
             if (isLogin) {
-                // Login
+                // APPEL API POUR SE CONNECTER
                 const response = await api.post('token/', {
                     username: formData.username,
                     password: formData.password
                 });
                 
-                // Store tokens
+                // On stocke les jetons (Tokens) dans le navigateur (LocalStorage)
+                // pour que l'utilisateur reste connecté même s'il ferme l'onglet
                 localStorage.setItem('access_token', response.data.access);
                 localStorage.setItem('refresh_token', response.data.refresh);
                 
+                // Redirection vers le tableau de bord
                 navigate('/dashboard');
             } else {
-                // Register
+                // APPEL API POUR S'INSCRIRE
                 await api.post('register/', {
                     username: formData.username,
                     email: formData.email,
                     password: formData.password
                 });
                 
-                // Switch to login mode after successful registration
+                // On repasse en mode connexion après l'inscription
                 setIsLogin(true);
                 alert("Compte créé avec succès ! Connectez-vous maintenant.");
             }
         } catch (err) {
             console.error('Auth error', err);
-            setError('Identifiants incorrects. Veuillez réessayer.');
+            if (!err.response) {
+                setError('Le serveur est inaccessible. Vérifiez qu\'il est bien lancé.');
+            } else if (err.response.status === 401) {
+                setError('Identifiants incorrects.');
+            } else {
+                setError('Une erreur est survenue lors de l\'authentification.');
+            }
         } finally {
             setLoading(false);
         }

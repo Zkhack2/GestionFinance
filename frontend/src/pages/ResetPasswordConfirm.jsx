@@ -25,17 +25,17 @@ const ResetPasswordConfirm = () => {
         setLoading(true);
 
         try {
-            // Django expects a POST to this URL for confirmation
-            // We use the same format as Django's PasswordResetConfirmView but adapted for API if needed
-            // Currently, we'll try to post to the backend URL
-            // Note: Django's built-in view might need specific form data
-            const formData = new FormData();
-            formData.append('new_password1', password);
-            formData.append('new_password2', confirmPassword);
+            // APPEL API FINAL : on envoie le nouveau mot de passe 
+            // avec l'UID et le TOKEN extraits de l'URL
+            const resetData = {
+                new_password1: password,
+                new_password2: confirmPassword
+            };
 
-            await api.post(`reset/${uid}/${token}/`, formData);
+            await api.post(`reset/${uid}/${token}/`, resetData);
             
             setMessage('Votre mot de passe a été réinitialisé avec succès !');
+            // Redirection vers la page de connexion après 3 secondes
             setTimeout(() => navigate('/login'), 3000);
         } catch (err) {
             console.error('Reset confirm error', err);

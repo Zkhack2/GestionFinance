@@ -6,10 +6,11 @@ import './Transactions.css';
 const Transactions = () => {
     const [transactions, setTransactions] = useState([]);
     const [loading, setLoading] = useState(true);
-    const [isMenuOpen, setIsMenuOpen] = useState(false);
     
-    // Form state
+    // État pour afficher ou cacher le formulaire d'ajout
     const [showForm, setShowForm] = useState(false);
+    
+    // État pour les données du nouveau formulaire
     const [formData, setFormData] = useState({
         montant: '',
         type_transaction: 'DEPENSE',
@@ -18,6 +19,7 @@ const Transactions = () => {
 
     const navigate = useNavigate();
 
+    // Fonction réutilisable pour récupérer la liste mise à jour
     const fetchTransactions = async () => {
         try {
             const res = await api.get('transactions/');
@@ -32,6 +34,7 @@ const Transactions = () => {
         }
     };
 
+    // Au chargement de la page, on récupère les données
     useEffect(() => {
         fetchTransactions();
     }, [navigate]);
@@ -46,24 +49,29 @@ const Transactions = () => {
         setFormData({ ...formData, [e.target.name]: e.target.value });
     };
 
+    // Fonction pour envoyer les données du formulaire au backend
     const handleSubmit = async (e) => {
         e.preventDefault();
         try {
+            // APPEL API POST : on envoie l'objet formData
             await api.post('transactions/', formData);
-            setShowForm(false);
-            setFormData({ montant: '', type_transaction: 'DEPENSE', description: '' });
-            fetchTransactions(); // Refresh the list
+            setShowForm(false); // On cache le formulaire après succès
+            setFormData({ montant: '', type_transaction: 'DEPENSE', description: '' }); // On vide les champs
+            fetchTransactions(); // On recharge la liste pour voir la nouvelle transaction
         } catch (err) {
             console.error("Erreur lors de l'ajout", err);
             alert("Une erreur est survenue lors de l'ajout de la transaction.");
         }
     };
 
+    // Fonction pour supprimer une transaction
     const handleDelete = async (id) => {
+        // Demande une confirmation à l'utilisateur avant de supprimer
         if(window.confirm("Êtes-vous sûr de vouloir supprimer cette transaction ?")) {
             try {
+                // APPEL API DELETE : on précise l'ID de la transaction dans l'URL
                 await api.delete(`transactions/${id}/`);
-                fetchTransactions(); // Refresh the list
+                fetchTransactions(); // On rafraîchit la liste
             } catch (err) {
                 console.error("Erreur lors de la suppression", err);
                 alert("Erreur lors de la suppression.");

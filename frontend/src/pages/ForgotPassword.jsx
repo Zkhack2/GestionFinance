@@ -17,6 +17,8 @@ const ForgotPassword = () => {
         setLoading(true);
 
         try {
+            // APPEL API : demande d'envoi d'un email de réinitialisation
+            // Django utilise ses vues par défaut pour envoyer l'email (en console ici)
             await api.post('password_reset/', { email });
             setMessage('Si cet email est enregistré, vous recevrez un lien de réinitialisation prochainement.');
         } catch (err) {
