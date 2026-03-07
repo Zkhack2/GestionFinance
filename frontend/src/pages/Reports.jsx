@@ -9,18 +9,21 @@ const COLORS = ['#10B981', '#EF4444', '#F59E0B', '#3B82F6', '#8B5CF6'];
 const Reports = () => {
     const [transactions, setTransactions] = useState([]);
     const [dettes, setDettes] = useState([]);
+    const [factures, setFactures] = useState([]);
     const [loading, setLoading] = useState(true);
     const navigate = useNavigate();
 
     useEffect(() => {
         const fetchAllData = async () => {
             try {
-                const [resTrans, resDettes] = await Promise.all([
+                const [resTrans, resDettes, resFactures] = await Promise.all([
                     api.get('transactions/'),
-                    api.get('dettes/')
+                    api.get('dettes/'),
+                    api.get('factures/')
                 ]);
                 setTransactions(resTrans.data);
                 setDettes(resDettes.data);
+                setFactures(resFactures.data);
             } catch (err) {
                 if (err.response && err.response.status === 401) {
                     navigate('/login');
@@ -66,11 +69,50 @@ const Reports = () => {
         montant: groupedExpenses[key]
     })).sort((a,b) => b.montant - a.montant).slice(0, 5); // top 5 expenses
 
+    // Compute Alerts (Overdue and Upcoming within 7 days)
+    const computeAlerts = () => {
+        const alertsList = [];
+        const today = new Date();
+        today.setHours(0,0,0,0);
+        
+        const inSevenDays = new Date(today);
+        inSevenDays.setDate(today.getDate() + 7);
+
+        // Check Factures
+        factures.forEach(f => {
+            if (!f.est_payee && f.date_echeance) {
+                const echeance = new Date(f.date_echeance);
+                if (echeance < today) {
+                    alertsList.push({ id: `f-${f.id}`, type: 'danger', title: 'Facture en retard', desc: `${f.titre} - ${f.montant}€`, date: f.date_echeance, link: '/dettes-factures' });
+                } else if (echeance <= inSevenDays) {
+                    alertsList.push({ id: `f-${f.id}`, type: 'warning', title: 'Facture à venir', desc: `${f.titre} - ${f.montant}€`, date: f.date_echeance, link: '/dettes-factures' });
+                }
+            }
+        });
+
+        // Check Dettes
+        dettes.forEach(d => {
+            if (!d.est_rembourse && d.date_echeance) {
+                const echeance = new Date(d.date_echeance);
+                if (echeance < today) {
+                    alertsList.push({ id: `d-${d.id}`, type: 'danger', title: 'Dette en retard', desc: `Remboursement à ${d.creancier_ou_debiteur} - ${d.montant}€`, date: d.date_echeance, link: '/dettes-factures' });
+                } else if (echeance <= inSevenDays) {
+                    alertsList.push({ id: `d-${d.id}`, type: 'warning', title: 'Dette à venir', desc: `Remboursement à ${d.creancier_ou_debiteur} - ${d.montant}€`, date: d.date_echeance, link: '/dettes-factures' });
+                }
+            }
+        });
+
+        // Sort by date closest to today (overdue first)
+        return alertsList.sort((a, b) => new Date(a.date) - new Date(b.date));
+    };
+
+    const alerts = computeAlerts();
+
     if (loading) return <div className="page-container"><p>Chargement des rapports...</p></div>;
 
     return (
         <div className="dashboard-layout">
-            <nav className="sidebar glass-panel">
+            <nav className="sidebar glass-panel animate-slide-in-left">
                 <div className="logo-container">
                     <span className="logo-icon-small">💸</span>
                     <h2>Djago</h2>
@@ -81,19 +123,22 @@ const Reports = () => {
                     <li><a href="/dettes-factures">Dettes & Factures</a></li>
                     <li className="active"><a href="/rapports">Rapports</a></li>
                 </ul>
-                <div className="sidebar-footer">
-                    <button onClick={handleLogout} className="btn btn-secondary btn-block">Déconnexion</button>
-                </div>
             </nav>
+            <div className="sidebar-footer">
+                <button onClick={handleLogout} className="btn btn-secondary btn-block">
+                    <span style={{marginRight: '0.5rem'}}>🚪</span> Déconnexion
+                </button>
+            </div>
+
 
             <main className="dashboard-content page-container">
-                <header className="dashboard-header">
+                <header className="dashboard-header animate-fade-in-up">
                     <h1 className="title">Analyses et Statistiques</h1>
                     <p className="subtitle">Visualisez la répartition de votre budget</p>
                 </header>
 
                 <div className="charts-grid">
-                    <div className="glass-panel chart-card">
+                    <div className="glass-panel chart-card animate-scale-in delay-100">
                         <h3>Dépenses vs Revenus</h3>
                         <div className="chart-wrapper">
                             <ResponsiveContainer width="100%" height={300}>
@@ -118,7 +163,7 @@ const Reports = () => {
                         </div>
                     </div>
 
-                    <div className="glass-panel chart-card">
+                    <div className="glass-panel chart-card animate-scale-in delay-200">
                         <h3>Top 5 Catégories de Dépenses</h3>
                         <div className="chart-wrapper">
                             <ResponsiveContainer width="100%" height={300}>
@@ -134,7 +179,32 @@ const Reports = () => {
                     </div>
                 </div>
 
-                <div className="glass-panel summary-stats">
+                {/* Alerts Section */}
+                {alerts.length > 0 && (
+                    <div className="glass-panel alerts-section animate-fade-in-up delay-300">
+                        <h3>⚠️ Alertes et Rappels</h3>
+                        <div className="alerts-list">
+                            {alerts.map(alert => (
+                                <div key={alert.id} className={`alert-item ${alert.type}`}>
+                                    <div className="alert-icon">
+                                        {alert.type === 'danger' ? '🔴' : '🟠'}
+                                    </div>
+                                    <div className="alert-content">
+                                        <div className="alert-title">{alert.title}</div>
+                                        <div className="alert-desc">{alert.desc} (Échéance: {new Date(alert.date).toLocaleDateString('fr-FR')})</div>
+                                    </div>
+                                    <div className="alert-action">
+                                        <button className="btn btn-secondary" onClick={() => navigate(alert.link)}>
+                                            Gérer
+                                        </button>
+                                    </div>
+                                </div>
+                            ))}
+                        </div>
+                    </div>
+                )}
+
+                <div className="glass-panel summary-stats animate-fade-in-up delay-400">
                     <h3>Résumé Global</h3>
                     <div className="stats-row">
                         <div className="stat-box">

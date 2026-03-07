@@ -135,7 +135,7 @@ const DettesFactures = () => {
 
     return (
         <div className="dashboard-layout">
-            <nav className="sidebar glass-panel">
+            <nav className="sidebar glass-panel animate-slide-in-left">
                 <div className="logo-container">
                     <span className="logo-icon-small">💸</span>
                     <h2>Djago</h2>
@@ -146,16 +146,19 @@ const DettesFactures = () => {
                     <li className="active"><a href="/dettes-factures">Dettes & Factures</a></li>
                     <li><a href="/rapports">Rapports</a></li>
                 </ul>
-                <div className="sidebar-footer">
-                    <button onClick={handleLogout} className="btn btn-secondary btn-block">Déconnexion</button>
-                </div>
             </nav>
+            <div className="sidebar-footer">
+                <button onClick={handleLogout} className="btn btn-secondary btn-block">
+                    <span style={{marginRight: '0.5rem'}}>🚪</span> Déconnexion
+                </button>
+            </div>
+
 
             <main className="dashboard-content page-container">
-                <header className="dashboard-header flex-header">
+                <header className="dashboard-header flex-header animate-fade-in-up">
                     <h1 className="title">Gestion des Dettes</h1>
                     <button 
-                        className="btn" 
+                        className="btn animate-scale-in delay-100" 
                         onClick={() => setShowDetteForm(!showDetteForm)}
                     >
                         {showDetteForm ? 'Annuler' : '+ Nouvelle Dette'}
@@ -189,7 +192,7 @@ const DettesFactures = () => {
                     </div>
                 )}
 
-                <div className="glass-panel main-table-container" style={{marginBottom: '3rem'}}>
+                <div className="glass-panel main-table-container animate-fade-in-up delay-200" style={{marginBottom: '3rem'}}>
                     {dettes.length === 0 ? (
                         <p className="empty-state">Aucune dette enregistrée.</p>
                     ) : (
@@ -204,10 +207,12 @@ const DettesFactures = () => {
                                 </tr>
                             </thead>
                             <tbody>
-                                {dettes.map(d => {
+                                {dettes.map((d, index) => {
                                     const enRetard = isOverdue(d.date_echeance, d.est_rembourse);
+                                    let rowClass = animateBg(d.est_rembourse);
+                                    if (enRetard) rowClass += ' row-danger';
                                     return (
-                                        <tr key={d.id} className={enRetard ? 'row-danger' : animateBg(d.est_rembourse)}>
+                                        <tr key={d.id} className={`${rowClass} animate-fade-in-up`} style={{animationDelay: `${300 + Math.min(index * 50, 1000)}ms`}}>
                                             <td className="desc-cell">{d.creancier_ou_debiteur}</td>
                                             <td className="amount-col">{parseFloat(d.montant).toFixed(2)} €</td>
                                             <td className={enRetard ? 'text-danger fw-bold' : ''}>
@@ -234,10 +239,10 @@ const DettesFactures = () => {
                     )}
                 </div>
 
-                <header className="dashboard-header flex-header" style={{marginTop: '2rem'}}>
+                <header className="dashboard-header flex-header animate-fade-in-up delay-300" style={{marginTop: '2rem'}}>
                     <h1 className="title">Factures à venir</h1>
                     <button 
-                        className="btn" 
+                        className="btn animate-scale-in delay-400" 
                         onClick={() => setShowFactureForm(!showFactureForm)}
                     >
                         {showFactureForm ? 'Annuler' : '+ Nouvelle Facture'}
@@ -271,7 +276,7 @@ const DettesFactures = () => {
                     </div>
                 )}
                 
-                <div className="glass-panel main-table-container">
+                <div className="glass-panel main-table-container animate-fade-in-up delay-400">
                     {factures.length === 0 ? (
                         <p className="empty-state">Aucune facture enregistrée.</p>
                     ) : (
@@ -285,10 +290,12 @@ const DettesFactures = () => {
                                 </tr>
                             </thead>
                             <tbody>
-                                {factures.map(f => {
+                                {factures.map((f, index) => {
                                     const enRetard = isOverdue(f.date_echeance, f.est_payee);
+                                    let rowClass = animateBg(f.est_payee);
+                                    if (enRetard) rowClass += ' row-danger';
                                     return (
-                                    <tr key={f.id} className={enRetard ? 'row-danger' : animateBg(f.est_payee)}>
+                                    <tr key={f.id} className={`${rowClass} animate-fade-in-up`} style={{animationDelay: `${500 + Math.min(index * 50, 1000)}ms`}}>
                                         <td className="desc-cell">{f.titre}</td>
                                         <td className="amount-col">{parseFloat(f.montant).toFixed(2)} €</td>
                                         <td className={enRetard ? 'text-danger fw-bold' : ''}>

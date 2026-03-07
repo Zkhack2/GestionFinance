@@ -88,6 +88,27 @@
     text-decoration: underline;
 }
 
+.forgot-password-link {
+    display: flex;
+    justify-content: flex-end;
+    margin-top: -0.25rem;
+}
+
+.link-btn {
+    background: none;
+    border: none;
+    color: var(--primary);
+    font-size: 0.85rem;
+    font-weight: 500;
+    cursor: pointer;
+    padding: 0;
+}
+
+.link-btn:hover {
+    color: var(--primary-hover);
+    text-decoration: underline;
+}
+
 .error-message {
     background-color: rgba(239, 68, 68, 0.1);
     color: var(--danger);
@@ -105,4 +126,13 @@
     25% { transform: translateX(-5px); }
     50% { transform: translateX(5px); }
     75% { transform: translateX(-5px); }
+}
+
+@media (max-width: 480px) {
+    .login-container {
+        padding: 1.5rem;
+    }
+    .logo-icon {
+        font-size: 2.5rem;
+    }
 }

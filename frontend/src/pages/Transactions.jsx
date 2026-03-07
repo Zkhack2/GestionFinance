@@ -76,7 +76,7 @@ const Transactions = () => {
     return (
         <div className="dashboard-layout">
             {/* Same Sidebar as Dashboard (in a real app, this should be a reusable component) */}
-            <nav className="sidebar glass-panel">
+            <nav className="sidebar glass-panel animate-slide-in-left">
                 <div className="logo-container">
                     <span className="logo-icon-small">💸</span>
                     <h2>Djago</h2>
@@ -87,16 +87,19 @@ const Transactions = () => {
                     <li><a href="/dettes-factures">Dettes & Factures</a></li>
                     <li><a href="/rapports">Rapports</a></li>
                 </ul>
-                <div className="sidebar-footer">
-                    <button onClick={handleLogout} className="btn btn-secondary btn-block">Déconnexion</button>
-                </div>
             </nav>
+            <div className="sidebar-footer">
+                <button onClick={handleLogout} className="btn btn-secondary btn-block">
+                    <span style={{marginRight: '0.5rem'}}>🚪</span> Déconnexion
+                </button>
+            </div>
+
 
             <main className="dashboard-content page-container">
-                <header className="dashboard-header flex-header">
+                <header className="dashboard-header flex-header animate-fade-in-up">
                     <h1 className="title">Historique des transactions</h1>
                     <button 
-                        className="btn" 
+                        className="btn animate-scale-in delay-100" 
                         onClick={() => setShowForm(!showForm)}
                     >
                         {showForm ? 'Annuler' : '+ Nouvelle Transaction'}
@@ -152,7 +155,7 @@ const Transactions = () => {
                     </div>
                 )}
 
-                <div className="glass-panel main-table-container">
+                <div className="glass-panel main-table-container animate-fade-in-up delay-200">
                     {transactions.length === 0 ? (
                         <p className="empty-state">Vous n'avez pas encore de transactions.</p>
                     ) : (
@@ -167,8 +170,8 @@ const Transactions = () => {
                                 </tr>
                             </thead>
                             <tbody>
-                                {transactions.map(t => (
-                                    <tr key={t.id}>
+                                {transactions.map((t, index) => (
+                                    <tr key={t.id} className="animate-fade-in-up" style={{animationDelay: `${300 + Math.min(index * 50, 1000)}ms`}}>
                                         <td>{new Date(t.date_creation).toLocaleDateString('fr-FR')}</td>
                                         <td className="desc-cell">{t.description}</td>
                                         <td>

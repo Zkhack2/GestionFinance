@@ -33,9 +33,16 @@ const Login = () => {
                 
                 navigate('/dashboard');
             } else {
-                // Register (mocked for now, needs backend endpoint)
-                // We'll add this to backend soon. For now we show an error to indicate it's not ready.
-                setError('La création de compte sera disponible bientôt. Connectez-vous avec un compte existant.');
+                // Register
+                await api.post('register/', {
+                    username: formData.username,
+                    email: formData.email,
+                    password: formData.password
+                });
+                
+                // Switch to login mode after successful registration
+                setIsLogin(true);
+                alert("Compte créé avec succès ! Connectez-vous maintenant.");
             }
         } catch (err) {
             console.error('Auth error', err);
@@ -47,8 +54,8 @@ const Login = () => {
 
     return (
         <div className="login-wrapper">
-            <div className="login-container glass-panel">
-                <div className="login-header">
+            <div className="login-container glass-panel animate-scale-in">
+                <div className="login-header animate-fade-in-up delay-100">
                     <div className="logo-icon">💸</div>
                     <h2 className="title">{isLogin ? 'Bon retour' : 'Créer un compte'}</h2>
                     <p className="subtitle">
@@ -98,6 +105,17 @@ const Login = () => {
                             onChange={handleChange}
                             required
                         />
+                        {isLogin && (
+                            <div className="forgot-password-link">
+                                <button 
+                                    type="button" 
+                                    className="link-btn"
+                                    onClick={() => navigate('/forgot-password')}
+                                >
+                                    Mot de passe oublié ?
+                                </button>
+                            </div>
+                        )}
                     </div>
 
                     <button type="submit" className="btn btn-block" disabled={loading}>
