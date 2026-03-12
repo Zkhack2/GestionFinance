@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, NavLink } from 'react-router-dom';
+import ThemeToggle from '../components/ThemeToggle';
 import api from '../api/axios';
 import './Transactions.css'; // Reusing transaction styles for the table
 
@@ -141,12 +142,31 @@ const DettesFactures = () => {
                 <div className="logo-container">
                     <span className="logo-icon-small">💸</span>
                     <h2>Djago</h2>
+                    <div className="theme-toggle-nav">
+                        <ThemeToggle />
+                    </div>
                 </div>
                 <ul className="nav-links">
-                    <li><a href="/dashboard">Tableau de bord</a></li>
-                    <li><a href="/transactions">Transactions</a></li>
-                    <li className="active"><a href="/dettes-factures">Dettes & Factures</a></li>
-                    <li><a href="/rapports">Rapports</a></li>
+                    <li>
+                        <NavLink to="/dashboard" className={({ isActive }) => isActive ? 'active' : ''}>
+                            Tableau de bord
+                        </NavLink>
+                    </li>
+                    <li>
+                        <NavLink to="/transactions" className={({ isActive }) => isActive ? 'active' : ''}>
+                            Transactions
+                        </NavLink>
+                    </li>
+                    <li>
+                        <NavLink to="/dettes-factures" className={({ isActive }) => isActive ? 'active' : ''}>
+                            Dettes & Factures
+                        </NavLink>
+                    </li>
+                    <li>
+                        <NavLink to="/rapports" className={({ isActive }) => isActive ? 'active' : ''}>
+                            Rapports
+                        </NavLink>
+                    </li>
                 </ul>
             </nav>
             <div className="sidebar-footer">

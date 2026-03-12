@@ -21,10 +21,6 @@ const ThemeToggle = () => {
       onClick={toggleTheme}
       className="btn btn-secondary"
       style={{
-        position: 'fixed',
-        top: '20px',
-        right: '20px',
-        zIndex: 50,
         borderRadius: '50%',
         width: '50px',
         height: '50px',

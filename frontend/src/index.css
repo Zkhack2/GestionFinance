@@ -43,13 +43,17 @@
 }
 
 body {
-  background-color: var(--background);
+  background:
+    radial-gradient(circle at top left, rgba(79, 70, 229, 0.35), transparent 55%),
+    radial-gradient(circle at bottom right, rgba(16, 185, 129, 0.25), transparent 55%),
+    var(--background);
   color: var(--text-main);
   min-height: 100vh;
   display: flex;
   flex-direction: column;
   overflow-x: hidden;
   width: 100%;
+  transition: background 0.35s ease, color 0.25s ease;
 }
 
 #root {
@@ -93,11 +97,13 @@ a:hover {
   display: inline-flex;
   align-items: center;
   justify-content: center;
+  box-shadow: 0 8px 18px rgba(15, 23, 42, 0.4);
 }
 
 .btn:hover {
   background-color: var(--primary-hover);
-  transform: translateY(-1px);
+  transform: translateY(-1px) scale(1.01);
+  box-shadow: 0 12px 25px rgba(15, 23, 42, 0.55);
 }
 
 .btn-secondary {
@@ -199,8 +205,9 @@ a:hover {
 .logo-container {
     display: flex;
     align-items: center;
+    justify-content: space-between;
     gap: 0.75rem;
-    margin-bottom: 3rem;
+    margin-bottom: 2rem;
 }
 
 .logo-icon-small {
@@ -214,6 +221,20 @@ a:hover {
     background-clip: text;
     -webkit-text-fill-color: transparent;
     margin: 0;
+}
+
+.theme-toggle-nav {
+    display: flex;
+    align-items: center;
+    margin-left: 0.75rem;
+}
+
+.theme-toggle-nav .btn {
+    width: 42px;
+    height: 42px;
+    padding: 0;
+    border-radius: 999px;
+    box-shadow: 0 8px 18px rgba(15, 23, 42, 0.4);
 }
 
 .nav-links {
@@ -232,7 +253,7 @@ a:hover {
     transition: all 0.2s;
 }
 
-.nav-links li.active a,
+.nav-links a.active,
 .nav-links li a:hover {
     background-color: rgba(79, 70, 229, 0.1);
     color: var(--primary);
@@ -352,4 +373,40 @@ a:hover {
 .delay-400 { animation-delay: 400ms; }
 .delay-500 { animation-delay: 500ms; }
 .delay-600 { animation-delay: 600ms; }
+
+/* Explicit HTML-level theme variables to work with ThemeToggle (html.light class) */
+html {
+  --primary: #4F46E5;
+  --primary-hover: #4338CA;
+  --secondary: #10B981;
+  --background: #0F172A;
+  --surface: #1E293B;
+  --surface-light: rgba(30, 41, 59, 0.7);
+  --text-main: #F8FAFC;
+  --text-muted: #94A3B8;
+  --danger: #EF4444;
+  --border: rgba(255, 255, 255, 0.1);
+  --title-gradient: linear-gradient(to right, #fff, #94A3B8);
+  --input-bg: rgba(15, 23, 42, 0.6);
+  --table-header-bg: rgba(30, 41, 59, 0.9);
+  --table-hover: rgba(255, 255, 255, 0.02);
+  font-family: 'Outfit', system-ui, sans-serif;
+}
+
+html.light {
+  --primary: #4F46E5;
+  --primary-hover: #4338CA;
+  --secondary: #10B981;
+  --background: #F8FAFC;
+  --surface: #FFFFFF;
+  --surface-light: rgba(255, 255, 255, 0.8);
+  --text-main: #0F172A;
+  --text-muted: #475569;
+  --danger: #EF4444;
+  --border: rgba(0, 0, 0, 0.1);
+  --title-gradient: linear-gradient(to right, var(--primary), var(--text-main));
+  --input-bg: rgba(255, 255, 255, 0.9);
+  --table-header-bg: #f1f5f9;
+  --table-hover: rgba(0, 0, 0, 0.02);
+}
 

@@ -2,7 +2,7 @@ from django.urls import path, include
 from rest_framework.routers import DefaultRouter
 from .views import (
     TransactionViewSet, DetteViewSet, FactureViewSet, 
-    RegisterView, BudgetViewSet, export_transactions_csv
+    RegisterView, BudgetViewSet, export_transactions_csv, change_password
 )
 
 # On utilise un "Router" qui crée automatiquement toutes les routes standard
@@ -22,4 +22,6 @@ urlpatterns = [
     path('', include(router.urls)),
     # Route personnalisée pour l'export CSV
     path('export-csv/', export_transactions_csv, name='export-csv'),
+    # Route pour changer le mot de passe
+    path('change-password/', change_password, name='change-password'),
 ]

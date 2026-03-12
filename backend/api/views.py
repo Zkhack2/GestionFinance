@@ -9,6 +9,8 @@ import csv
 from django.http import HttpResponse
 from rest_framework.decorators import api_view, permission_classes
 from django.contrib.auth.models import User
+from rest_framework.response import Response
+from rest_framework import status
 
 # --- VUE D'INSCRIPTION ---
 class RegisterView(generics.CreateAPIView):
@@ -83,3 +85,37 @@ def export_transactions_csv(request):
         writer.writerow([t.date_creation, t.type_transaction, t.montant, t.description])
         
     return response
+
+# --- VUE DE CHANGEMENT DE MOT DE PASSE ---
+@api_view(['POST'])
+@permission_classes([IsAuthenticated])
+def change_password(request):
+    """Permet à un utilisateur connecté de changer son mot de passe."""
+    old_password = request.data.get('old_password')
+    new_password = request.data.get('new_password')
+    
+    if not old_password or not new_password:
+        return Response(
+            {'error': 'Les champs ancien et nouveau mot de passe sont requis.'},
+            status=status.HTTP_400_BAD_REQUEST
+        )
+    
+    # Vérifier que l'ancien mot de passe est correct
+    if not request.user.check_password(old_password):
+        return Response(
+            {'error': 'L\'ancien mot de passe est incorrect.'},
+            status=status.HTTP_400_BAD_REQUEST
+        )
+    
+    # Vérifier la longueur minimale du nouveau mot de passe
+    if len(new_password) < 6:
+        return Response(
+            {'error': 'Le nouveau mot de passe doit contenir au moins 6 caractères.'},
+            status=status.HTTP_400_BAD_REQUEST
+        )
+    
+    # Changer le mot de passe
+    request.user.set_password(new_password)
+    request.user.save()
+    
+    return Response({'message': 'Mot de passe modifié avec succès.'}, status=status.HTTP_200_OK)

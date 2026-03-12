@@ -32,6 +32,8 @@
 .summary-stats {
     padding: 2rem;
     margin-bottom: 3rem;
+    border-radius: 18px;
+    box-shadow: 0 18px 45px rgba(15, 23, 42, 0.55);
 }
 
 .summary-stats h3 {
@@ -68,6 +70,8 @@
     margin-bottom: 3rem;
     padding: 2rem;
     border-left: 4px solid var(--danger);
+    border-radius: 18px;
+    box-shadow: 0 18px 45px rgba(15, 23, 42, 0.55);
 }
 
 .alerts-section h3 {
