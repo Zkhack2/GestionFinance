@@ -1,6 +1,6 @@
-import React, { useState, useEffect } from 'react';
-import { useNavigate, NavLink } from 'react-router-dom';
-import ThemeToggle from '../components/ThemeToggle';
+import React, { useState, useEffect, useCallback } from 'react';
+import { useNavigate } from 'react-router-dom';
+import SidebarLayout from '../components/SidebarLayout';
 import api from '../api/axios';
 import './Transactions.css';
 
@@ -21,7 +21,7 @@ const Transactions = () => {
     const navigate = useNavigate();
 
     // Fonction réutilisable pour récupérer la liste mise à jour
-    const fetchTransactions = async () => {
+    const fetchTransactions = useCallback(async () => {
         try {
             const res = await api.get('transactions/');
             setTransactions(res.data);
@@ -33,18 +33,12 @@ const Transactions = () => {
         } finally {
             setLoading(false);
         }
-    };
+    }, [navigate]);
 
     // Au chargement de la page, on récupère les données
     useEffect(() => {
         fetchTransactions();
-    }, [navigate]);
-
-    const handleLogout = () => {
-        localStorage.removeItem('access_token');
-        localStorage.removeItem('refresh_token');
-        navigate('/login');
-    };
+    }, [fetchTransactions]);
 
     const handleChange = (e) => {
         setFormData({ ...formData, [e.target.name]: e.target.value });
@@ -83,150 +77,109 @@ const Transactions = () => {
     if (loading) return <div className="page-container"><p>Chargement des transactions...</p></div>;
 
     return (
-        <div className="dashboard-layout">
-            {/* Same Sidebar as Dashboard (in a real app, this should be a reusable component) */}
-            <nav className="sidebar glass-panel animate-slide-in-left">
-                <div className="logo-container">
-                    <span className="logo-icon-small">💸</span>
-                    <h2>Djago</h2>
-                    <div className="theme-toggle-nav">
-                        <ThemeToggle />
-                    </div>
-                </div>
-                <ul className="nav-links">
-                    <li>
-                        <NavLink to="/dashboard" className={({ isActive }) => isActive ? 'active' : ''}>
-                            Tableau de bord
-                        </NavLink>
-                    </li>
-                    <li>
-                        <NavLink to="/transactions" className={({ isActive }) => isActive ? 'active' : ''}>
-                            Transactions
-                        </NavLink>
-                    </li>
-                    <li>
-                        <NavLink to="/dettes-factures" className={({ isActive }) => isActive ? 'active' : ''}>
-                            Dettes & Factures
-                        </NavLink>
-                    </li>
-                    <li>
-                        <NavLink to="/rapports" className={({ isActive }) => isActive ? 'active' : ''}>
-                            Rapports
-                        </NavLink>
-                    </li>
-                </ul>
-            </nav>
-            <div className="sidebar-footer">
-                <button onClick={handleLogout} className="btn btn-secondary btn-block">
-                    <span style={{marginRight: '0.5rem'}}>🚪</span> Déconnexion
+        <SidebarLayout>
+            <header className="dashboard-header flex-header animate-fade-in-up">
+                <h1 className="title">Historique des transactions</h1>
+                <button 
+                    className="btn animate-scale-in delay-100" 
+                    onClick={() => setShowForm(!showForm)}
+                >
+                    {showForm ? 'Annuler' : '+ Nouvelle Transaction'}
                 </button>
-            </div>
+            </header>
 
-
-            <main className="dashboard-content page-container">
-                <header className="dashboard-header flex-header animate-fade-in-up">
-                    <h1 className="title">Historique des transactions</h1>
-                    <button 
-                        className="btn animate-scale-in delay-100" 
-                        onClick={() => setShowForm(!showForm)}
-                    >
-                        {showForm ? 'Annuler' : '+ Nouvelle Transaction'}
-                    </button>
-                </header>
-
-                {showForm && (
-                    <div className="transaction-form-card glass-panel fade-in">
-                        <h3>Ajouter une transaction</h3>
-                        <form onSubmit={handleSubmit} className="t-form">
-                            <div className="form-row">
-                                <div className="input-group">
-                                    <label>Description</label>
-                                    <input 
-                                        type="text" 
-                                        name="description"
-                                        className="input-field" 
-                                        value={formData.description}
-                                        onChange={handleChange}
-                                        required 
-                                        placeholder="Ex: Courses au supermarché"
-                                    />
-                                </div>
-                                <div className="input-group">
-                                    <label>Montant (€)</label>
-                                    <input 
-                                        type="number" 
-                                        step="0.01"
-                                        min="0.01"
-                                        name="montant"
-                                        className="input-field" 
-                                        value={formData.montant}
-                                        onChange={handleChange}
-                                        required 
-                                        placeholder="Ex: 45.50"
-                                    />
-                                </div>
-                                <div className="input-group">
-                                    <label>Type</label>
-                                    <select 
-                                        name="type_transaction" 
-                                        className="input-field"
-                                        value={formData.type_transaction}
-                                        onChange={handleChange}
-                                    >
-                                        <option value="DEPENSE">Dépense (-)</option>
-                                        <option value="REVENU">Revenu (+)</option>
-                                    </select>
-                                </div>
+            {showForm && (
+                <div className="transaction-form-card glass-panel fade-in">
+                    <h3>Ajouter une transaction</h3>
+                    <form onSubmit={handleSubmit} className="t-form">
+                        <div className="form-row">
+                            <div className="input-group">
+                                <label>Description</label>
+                                <input 
+                                    type="text" 
+                                    name="description"
+                                    className="input-field" 
+                                    value={formData.description}
+                                    onChange={handleChange}
+                                    required 
+                                    placeholder="Ex: Courses au supermarché"
+                                />
                             </div>
-                            <button type="submit" className="btn">Enregistrer</button>
-                        </form>
-                    </div>
-                )}
-
-                <div className="glass-panel main-table-container animate-fade-in-up delay-200">
-                    {transactions.length === 0 ? (
-                        <p className="empty-state">Vous n'avez pas encore de transactions.</p>
-                    ) : (
-                        <table className="transactions-table">
-                            <thead>
-                                <tr>
-                                    <th>Date</th>
-                                    <th>Description</th>
-                                    <th>Type</th>
-                                    <th className="amount-col">Montant</th>
-                                    <th className="action-col">Action</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                {transactions.map((t, index) => (
-                                    <tr key={t.id} className="animate-fade-in-up" style={{animationDelay: `${300 + Math.min(index * 50, 1000)}ms`}}>
-                                        <td>{new Date(t.date_creation).toLocaleDateString('fr-FR')}</td>
-                                        <td className="desc-cell">{t.description}</td>
-                                        <td>
-                                            <span className={`badge ${t.type_transaction === 'REVENU' ? 'badge-success' : 'badge-danger'}`}>
-                                                {t.type_transaction === 'REVENU' ? 'Revenu' : 'Dépense'}
-                                            </span>
-                                        </td>
-                                        <td className={`amount-col ${t.type_transaction === 'REVENU' ? 'positive' : 'negative'}`}>
-                                            {t.type_transaction === 'REVENU' ? '+' : '-'}{parseFloat(t.montant).toFixed(2)} €
-                                        </td>
-                                        <td className="action-col">
-                                            <button 
-                                                className="delete-btn"
-                                                onClick={() => handleDelete(t.id)}
-                                                title="Supprimer"
-                                            >
-                                                ✕
-                                            </button>
-                                        </td>
-                                    </tr>
-                                ))}
-                            </tbody>
-                        </table>
-                    )}
+                            <div className="input-group">
+                                <label>Montant (€)</label>
+                                <input 
+                                    type="number" 
+                                    step="0.01"
+                                    min="0.01"
+                                    name="montant"
+                                    className="input-field" 
+                                    value={formData.montant}
+                                    onChange={handleChange}
+                                    required 
+                                    placeholder="Ex: 45.50"
+                                />
+                            </div>
+                            <div className="input-group">
+                                <label>Type</label>
+                                <select 
+                                    name="type_transaction" 
+                                    className="input-field"
+                                    value={formData.type_transaction}
+                                    onChange={handleChange}
+                                >
+                                    <option value="DEPENSE">Dépense (-)</option>
+                                    <option value="REVENU">Revenu (+)</option>
+                                </select>
+                            </div>
+                        </div>
+                        <button type="submit" className="btn">Enregistrer</button>
+                    </form>
                 </div>
-            </main>
-        </div>
+            )}
+
+            <div className="glass-panel main-table-container animate-fade-in-up delay-200">
+                {transactions.length === 0 ? (
+                    <p className="empty-state">Vous n'avez pas encore de transactions.</p>
+                ) : (
+                    <table className="transactions-table">
+                        <thead>
+                            <tr>
+                                <th>Date</th>
+                                <th>Description</th>
+                                <th>Type</th>
+                                <th className="amount-col">Montant</th>
+                                <th className="action-col">Action</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {transactions.map((t, index) => (
+                                <tr key={t.id} className="animate-fade-in-up" style={{animationDelay: `${300 + Math.min(index * 50, 1000)}ms`}}>
+                                    <td>{new Date(t.date_creation).toLocaleDateString('fr-FR')}</td>
+                                    <td className="desc-cell">{t.description}</td>
+                                    <td>
+                                        <span className={`badge ${t.type_transaction === 'REVENU' ? 'badge-success' : 'badge-danger'}`}>
+                                            {t.type_transaction === 'REVENU' ? 'Revenu' : 'Dépense'}
+                                        </span>
+                                    </td>
+                                    <td className={`amount-col ${t.type_transaction === 'REVENU' ? 'positive' : 'negative'}`}>
+                                        {t.type_transaction === 'REVENU' ? '+' : '-'}{parseFloat(t.montant).toFixed(2)} €
+                                    </td>
+                                    <td className="action-col">
+                                        <button 
+                                            className="delete-btn"
+                                            onClick={() => handleDelete(t.id)}
+                                            title="Supprimer"
+                                        >
+                                            ✕
+                                        </button>
+                                    </td>
+                                </tr>
+                            ))}
+                        </tbody>
+                    </table>
+                )}
+            </div>
+        </SidebarLayout>
     );
 };
 

@@ -1,9 +1,18 @@
+"""Sérialiseurs pour l'API Django REST.
+
+Ce module définit les schémas d'entrée/sortie JSON utilisés par l'API pour
+créer et lire les objets en base de données (utilisateurs, transactions, etc.).
+"""
+
 from rest_framework import serializers
 from .models import Transaction, Dette, Facture, Budget
 from django.contrib.auth.models import User
+from .password_validators import validate_password_strength
+
 
 # --- SÉRIALISEUR UTILISATEUR ---
-# Un sérialiseur transforme les objets Python (modèles) en format JSON (pour le web)
+# Ce sérialiseur gère la création d'un nouvel utilisateur (inscription).
+# Il s'assure notamment que le mot de passe n'est pas renvoyé dans les réponses.
 class UserSerializer(serializers.ModelSerializer):
     class Meta:
         model = User
@@ -21,6 +30,44 @@ class UserSerializer(serializers.ModelSerializer):
             password=validated_data['password']
         )
         return user
+
+    def validate_password(self, value):
+        """Valide la force minimale du mot de passe pour l'inscription."""
+        return validate_password_strength(value)
+
+
+# --- SÉRIALISEURS DES OBJETS MÉTIER ---
+# Les autres sérialiseurs exposent tous les champs des modèles correspondants.
+# L'utilisateur est défini automatiquement par la vue (user connecté), donc il est
+# en lecture seule pour éviter toute modification accidentelle via l'API.
+
+class TransactionSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Transaction
+        fields = '__all__' # On expose tous les champs du modèle
+        # 'user' est en lecture seule car il est défini automatiquement via la requête
+        read_only_fields = ['user']
+
+
+class DetteSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Dette
+        fields = '__all__'
+        read_only_fields = ['user']
+
+
+class FactureSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Facture
+        fields = '__all__'
+        read_only_fields = ['user']
+
+
+class BudgetSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Budget
+        fields = '__all__'
+        read_only_fields = ['user']
 
 # --- SÉRIALISEUR TRANSACTION ---
 class TransactionSerializer(serializers.ModelSerializer):

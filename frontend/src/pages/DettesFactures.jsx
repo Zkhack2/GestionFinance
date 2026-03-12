@@ -1,6 +1,6 @@
-import React, { useState, useEffect } from 'react';
-import { useNavigate, NavLink } from 'react-router-dom';
-import ThemeToggle from '../components/ThemeToggle';
+import React, { useState, useEffect, useCallback } from 'react';
+import { useNavigate } from 'react-router-dom';
+import SidebarLayout from '../components/SidebarLayout';
 import api from '../api/axios';
 import './Transactions.css'; // Reusing transaction styles for the table
 
@@ -8,7 +8,15 @@ const DettesFactures = () => {
     const [dettes, setDettes] = useState([]);
     const [factures, setFactures] = useState([]);
     const [loading, setLoading] = useState(true);
-    
+
+    // Modal de confirmation (pour changer le statut)
+    const [confirmModal, setConfirmModal] = useState({
+        open: false,
+        type: null, // 'dette' | 'facture'
+        item: null,
+    });
+
+
     // Formulaires pour ajouter des dettes ou factures
     const [showDetteForm, setShowDetteForm] = useState(false);
     const [detteData, setDetteData] = useState({
@@ -23,7 +31,7 @@ const DettesFactures = () => {
     const navigate = useNavigate();
 
     // Récupération globale des données
-    const fetchData = async () => {
+    const fetchData = useCallback(async () => {
         try {
             // Promise.all permet de lancer les deux requêtes en même temps
             const [resDettes, resFactures] = await Promise.all([
@@ -40,16 +48,11 @@ const DettesFactures = () => {
         } finally {
             setLoading(false);
         }
-    };
+    }, [navigate]);
 
     useEffect(() => {
         fetchData();
-    }, [navigate]);
-
-    const handleLogout = () => {
-        localStorage.removeItem('access_token');
-        navigate('/login');
-    };
+    }, [fetchData]);
 
     // Generic form handler
     const handleDetteChange = (e) => {
@@ -84,6 +87,35 @@ const DettesFactures = () => {
         } catch (err) {
             console.error(err);
         }
+    };
+
+    const toggleFactureStatus = async (facture) => {
+        try {
+            await api.patch(`factures/${facture.id}/`, { est_payee: !facture.est_payee });
+            fetchData();
+        } catch (err) {
+            console.error(err);
+        }
+    };
+
+    const openConfirmModal = (type, item) => {
+        setConfirmModal({ open: true, type, item });
+    };
+
+    const closeConfirmModal = () => {
+        setConfirmModal({ open: false, type: null, item: null });
+    };
+
+    const confirmToggleStatus = async () => {
+        if (!confirmModal.item || !confirmModal.type) return;
+
+        if (confirmModal.type === 'dette') {
+            await toggleDetteStatus(confirmModal.item);
+        } else if (confirmModal.type === 'facture') {
+            await toggleFactureStatus(confirmModal.item);
+        }
+
+        closeConfirmModal();
     };
 
     const isOverdue = (dateString, isResolved) => {
@@ -125,67 +157,19 @@ const DettesFactures = () => {
         }
     };
 
-    const toggleFactureStatus = async (facture) => {
-        try {
-            await api.patch(`factures/${facture.id}/`, { est_payee: !facture.est_payee });
-            fetchData();
-        } catch (err) {
-            console.error(err);
-        }
-    };
-
     if (loading) return <div className="page-container"><p>Chargement...</p></div>;
 
     return (
-        <div className="dashboard-layout">
-            <nav className="sidebar glass-panel animate-slide-in-left">
-                <div className="logo-container">
-                    <span className="logo-icon-small">💸</span>
-                    <h2>Djago</h2>
-                    <div className="theme-toggle-nav">
-                        <ThemeToggle />
-                    </div>
-                </div>
-                <ul className="nav-links">
-                    <li>
-                        <NavLink to="/dashboard" className={({ isActive }) => isActive ? 'active' : ''}>
-                            Tableau de bord
-                        </NavLink>
-                    </li>
-                    <li>
-                        <NavLink to="/transactions" className={({ isActive }) => isActive ? 'active' : ''}>
-                            Transactions
-                        </NavLink>
-                    </li>
-                    <li>
-                        <NavLink to="/dettes-factures" className={({ isActive }) => isActive ? 'active' : ''}>
-                            Dettes & Factures
-                        </NavLink>
-                    </li>
-                    <li>
-                        <NavLink to="/rapports" className={({ isActive }) => isActive ? 'active' : ''}>
-                            Rapports
-                        </NavLink>
-                    </li>
-                </ul>
-            </nav>
-            <div className="sidebar-footer">
-                <button onClick={handleLogout} className="btn btn-secondary btn-block">
-                    <span style={{marginRight: '0.5rem'}}>🚪</span> Déconnexion
+        <SidebarLayout>
+            <header className="dashboard-header flex-header animate-fade-in-up">
+                <h1 className="title">Gestion des Dettes</h1>
+                <button 
+                    className="btn animate-scale-in delay-100" 
+                    onClick={() => setShowDetteForm(!showDetteForm)}
+                >
+                    {showDetteForm ? 'Annuler' : '+ Nouvelle Dette'}
                 </button>
-            </div>
-
-
-            <main className="dashboard-content page-container">
-                <header className="dashboard-header flex-header animate-fade-in-up">
-                    <h1 className="title">Gestion des Dettes</h1>
-                    <button 
-                        className="btn animate-scale-in delay-100" 
-                        onClick={() => setShowDetteForm(!showDetteForm)}
-                    >
-                        {showDetteForm ? 'Annuler' : '+ Nouvelle Dette'}
-                    </button>
-                </header>
+            </header>
 
                 {showDetteForm && (
                     <div className="transaction-form-card glass-panel fade-in">
@@ -224,8 +208,7 @@ const DettesFactures = () => {
                                     <th>Tiers</th>
                                     <th>Montant</th>
                                     <th>Échéance</th>
-                                    <th>Statut</th>
-                                    <th className="action-col">Action</th>
+                                    <th>Statut (cliquer pour changer)</th>
                                 </tr>
                             </thead>
                             <tbody>
@@ -241,17 +224,13 @@ const DettesFactures = () => {
                                                 {d.date_echeance ? new Date(d.date_echeance).toLocaleDateString('fr-FR') : 'Non défini'}
                                             </td>
                                             <td>
-                                                <span className={`badge ${d.est_rembourse ? 'badge-success' : (enRetard ? 'badge-danger' : 'badge-warning')}`}>
+                                                <span
+                                                    className={`badge clickable ${d.est_rembourse ? 'badge-success' : (enRetard ? 'badge-danger' : 'badge-warning')}`}
+                                                    onClick={() => toggleDetteStatus(d)}
+                                                    title="Cliquer pour basculer le statut"
+                                                >
                                                     {d.est_rembourse ? 'Remboursé' : (enRetard ? 'En retard !' : 'En cours')}
                                                 </span>
-                                            </td>
-                                            <td className="action-col">
-                                                <button 
-                                                    className="btn btn-secondary btn-sm"
-                                                    onClick={() => toggleDetteStatus(d)}
-                                                >
-                                                    {d.est_rembourse ? 'Annuler' : 'Régler'}
-                                                </button>
                                             </td>
                                         </tr>
                                     );
@@ -308,7 +287,7 @@ const DettesFactures = () => {
                                     <th>Titre</th>
                                     <th>Montant</th>
                                     <th>Échéance</th>
-                                    <th>Statut</th>
+                                    <th>Statut (cliquer pour changer)</th>
                                 </tr>
                             </thead>
                             <tbody>
@@ -324,16 +303,13 @@ const DettesFactures = () => {
                                             {new Date(f.date_echeance).toLocaleDateString('fr-FR')}
                                         </td>
                                         <td>
-                                            <span className={`badge ${f.est_payee ? 'badge-success' : (enRetard ? 'badge-danger' : 'badge-warning')}`}>
-                                                {f.est_payee ? 'Payée' : (enRetard ? 'En retard !' : 'En attente')}
-                                            </span>
-                                        </td>
-                                        <td className="action-col">
-                                            <button 
-                                                className="btn btn-secondary btn-sm"
-                                                onClick={() => toggleFactureStatus(f)}
+                                            <button
+                                                type="button"
+                                                className={`badge clickable ${f.est_payee ? 'badge-success' : (enRetard ? 'badge-danger' : 'badge-warning')}`}
+                                                onClick={() => openConfirmModal('facture', f)}
+                                                title="Cliquer pour changer le statut"
                                             >
-                                                {f.est_payee ? 'Annuler' : 'Payer'}
+                                                {f.est_payee ? 'Payée' : (enRetard ? 'En retard !' : 'En attente')}
                                             </button>
                                         </td>
                                     </tr>
@@ -344,8 +320,26 @@ const DettesFactures = () => {
                     )}
                 </div>
 
-            </main>
-        </div>
+            {confirmModal.open && (
+                <div className="modal-overlay" onClick={closeConfirmModal}>
+                    <div className="modal" onClick={(e) => e.stopPropagation()}>
+                        <h3>Confirmer l'action</h3>
+                        <p>
+                            Voulez-vous vraiment {confirmModal.type === 'dette' ? 'changer le statut de cette dette' : 'changer le statut de cette facture'} ?
+                        </p>
+                        <div className="modal-actions">
+                            <button className="btn btn-secondary" onClick={closeConfirmModal}>
+                                Annuler
+                            </button>
+                            <button className="btn" onClick={confirmToggleStatus}>
+                                Confirmer
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            )}
+
+        </SidebarLayout>
     );
 };
 

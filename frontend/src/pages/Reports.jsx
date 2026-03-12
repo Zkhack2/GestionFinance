@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
-import { useNavigate, NavLink } from 'react-router-dom';
-import ThemeToggle from '../components/ThemeToggle';
+import { useNavigate } from 'react-router-dom';
+import SidebarLayout from '../components/SidebarLayout';
 import { 
     PieChart, Pie, Cell, Tooltip, ResponsiveContainer, 
     BarChart, Bar, XAxis, YAxis, CartesianGrid, Legend,
@@ -43,11 +43,6 @@ const Reports = () => {
         };
         fetchAllData();
     }, [navigate]);
-
-    const handleLogout = () => {
-        localStorage.removeItem('access_token');
-        navigate('/login');
-    };
 
     // Fonction pour télécharger l'export CSV
     const handleExportCSV = async () => {
@@ -156,55 +151,17 @@ const Reports = () => {
     if (loading) return <div className="page-container"><p>Chargement des rapports...</p></div>;
 
     return (
-        <div className="dashboard-layout">
-            <nav className="sidebar glass-panel animate-slide-in-left">
-                <div className="logo-container">
-                    <span className="logo-icon-small">💸</span>
-                    <h2>Djago</h2>
-                    <div className="theme-toggle-nav">
-                        <ThemeToggle />
-                    </div>
-                </div>
-                <ul className="nav-links">
-                    <li>
-                        <NavLink to="/dashboard" className={({ isActive }) => isActive ? 'active' : ''}>
-                            Tableau de bord
-                        </NavLink>
-                    </li>
-                    <li>
-                        <NavLink to="/transactions" className={({ isActive }) => isActive ? 'active' : ''}>
-                            Transactions
-                        </NavLink>
-                    </li>
-                    <li>
-                        <NavLink to="/dettes-factures" className={({ isActive }) => isActive ? 'active' : ''}>
-                            Dettes & Factures
-                        </NavLink>
-                    </li>
-                    <li>
-                        <NavLink to="/rapports" className={({ isActive }) => isActive ? 'active' : ''}>
-                            Rapports
-                        </NavLink>
-                    </li>
-                </ul>
-            </nav>
-            <div className="sidebar-footer">
-                <button onClick={handleLogout} className="btn btn-secondary btn-block">
-                    <span style={{marginRight: '0.5rem'}}>🚪</span> Déconnexion
-                </button>
-            </div>
-
-
+        <SidebarLayout>
             <main className="dashboard-content page-container">
                 <header className="dashboard-header animate-fade-in-up">
-                    <div>
-                        <h1 className="title">Analyses et Statistiques</h1>
-                        <p className="subtitle">Visualisez la répartition de votre budget</p>
-                    </div>
-                    <button className="btn btn-secondary" onClick={handleExportCSV}>
-                        📥 Exporter CSV
-                    </button>
-                </header>
+                <div>
+                    <h1 className="title">Analyses et Statistiques</h1>
+                    <p className="subtitle">Visualisez la répartition de votre budget</p>
+                </div>
+                <button className="btn btn-secondary" onClick={handleExportCSV}>
+                    📥 Exporter CSV
+                </button>
+            </header>
 
                 <div className="charts-grid">
                     <div className="glass-panel chart-card animate-scale-in delay-100">
@@ -315,7 +272,7 @@ const Reports = () => {
                 </div>
 
             </main>
-        </div>
+        </SidebarLayout>
     );
 };
 

@@ -1,3 +1,14 @@
+"""Views (API endpoints) pour l'application de gestion financière.
+
+Ce module expose des endpoints REST pour :
+- l'inscription des utilisateurs
+- la gestion des transactions, dettes, factures et budgets
+- l'export CSV des transactions
+- le changement de mot de passe
+
+Les vues utilisent Django REST Framework (DRF).
+"""
+
 from rest_framework import viewsets, generics
 from rest_framework.permissions import IsAuthenticated, AllowAny
 from .models import Transaction, Dette, Facture, Budget
@@ -5,6 +16,7 @@ from .serializers import (
     TransactionSerializer, DetteSerializer, FactureSerializer, 
     UserSerializer, BudgetSerializer
 )
+from .password_validators import validate_password_strength
 import csv
 from django.http import HttpResponse
 from rest_framework.decorators import api_view, permission_classes
@@ -12,7 +24,9 @@ from django.contrib.auth.models import User
 from rest_framework.response import Response
 from rest_framework import status
 
+
 # --- VUE D'INSCRIPTION ---
+# Cette vue permet à un nouvel utilisateur de s'inscrire (POST /register).
 class RegisterView(generics.CreateAPIView):
     queryset = User.objects.all()
     # AllowAny : n'importe qui peut s'inscrire sans être connecté
@@ -107,10 +121,14 @@ def change_password(request):
             status=status.HTTP_400_BAD_REQUEST
         )
     
-    # Vérifier la longueur minimale du nouveau mot de passe
-    if len(new_password) < 6:
+    # Vérifier la force du nouveau mot de passe
+    try:
+        validate_password_strength(new_password)
+    except Exception as e:
+        # REST framework ValidationError stores details as a list/dict
+        message = getattr(e, 'detail', str(e))
         return Response(
-            {'error': 'Le nouveau mot de passe doit contenir au moins 6 caractères.'},
+            {'error': message},
             status=status.HTTP_400_BAD_REQUEST
         )
     
