@@ -1,0 +1,5 @@
+# Requirements used for Render / deploy.
+# Render runs pip install -r requirements.txt from the repo root by default.
+# This file simply delegates to the backend requirements.
+
+-r backend/requirements.txt
